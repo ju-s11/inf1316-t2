@@ -7,13 +7,13 @@
 
 ## Comandos de execução e compilação:
 
-# Compilação:
+### Compilação:
 gcc -Wall -o <nome do executável> <nome do arquivo C>
 
 exemplo:
 gcc -Wall -o sim-virtual simulador_memoria.c 
 
-# Execução:
+### Execução:
 ./<nome do executável> <algoritmo> <arquivo log> <tamanho de cada página> <tamanho total da memória>
 
 - Algoritmos: LRU, 2nd chance, clock ou ótimo
