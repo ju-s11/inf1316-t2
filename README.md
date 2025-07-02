@@ -7,9 +7,24 @@
 
 ## Comandos de execução e compilação:
 
+# Compilação:
+gcc -Wall -o <nome do executável> <nome do arquivo C>
+
+exemplo:
+gcc -Wall -o sim-virtual simulador_memoria.c 
+
+# Execução:
+./<nome do executável> <algoritmo> <arquivo log> <tamanho de cada página> <tamanho total da memória>
+
+- Algoritmos: LRU, 2nd chance, clock ou ótimo
+- Tamanhos de página (KB): 8 ou 32
+- Tamanhos da memória (MB): 1 ou 2 
+
+exemplo:
+./sim-virtual LRU arquivo.log 8 2
 
 ## Observações:
-
+Os arquivos de testes devem estar no mesmo diretório do programa em C ou no comando de execução deve-se informar o endereço completo do arquivo.
 
 ## Relatório Completo:
 https://docs.google.com/document/d/1lHo6KqouUSpN_UNgo2pzi66tyFfdK7ErPy30T0Q4JVE/edit?usp=sharing
