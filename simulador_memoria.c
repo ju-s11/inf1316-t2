@@ -301,8 +301,12 @@ int main(int argc, char *argv[]) {
     }
 
     while (fscanf(arquivo, "%x %c", &addr, &rw) == 2) {
-        if (rw != 'R' && rw != 'W') continue;
 
+        if (rw != 'R' && rw != 'W') {
+            fprintf(stderr, "Erro: operação inválida. Use 'R' ou 'W'.\n");
+            return 1;
+        }
+        
         if (strcmp(algoritmo, "LRU") == 0) {
             lru(memoria, numero_paginas, tamanho_pagina, addr, rw, &page_fault, &pagina_suja);
         } else if (strcmp(algoritmo, "clock") == 0) {
