@@ -81,7 +81,7 @@ void algoritmo_clock() { //função clock não pode ter o nome clock(), pois é 
 
 typedef struct {
     unsigned int pagina;
-    int M; // Página modificada
+    int M; // M = modificada
 } Quadro;
 
 typedef struct {
@@ -126,13 +126,13 @@ void otimo(Pagina *memoria, int numero_paginas, int tamanho_pagina, Acesso *aces
         if (!encontrada) {
             (*page_fault)++;
 
-            // Se ainda há espaço na memória, insere diretamente
+            // Se ainda tem espaço na memoria, insere direto
             if (paginas_carregadas < numero_paginas) {
                 quadros[paginas_carregadas].pagina = pagina_atual;
                 quadros[paginas_carregadas].M = (rw == 'W') ? 1 : 0;
                 paginas_carregadas++;
             } else {
-                // Substituição ótima
+                // agr o o algoritmo de fato:
                 int mais_distante = -1, indice_substituir = -1;
 
                 for (int i = 0; i < numero_paginas; i++) {
@@ -239,6 +239,7 @@ if (strcmp(algoritmo, "otimo") == 0) {
     otimo(memoria_otima, numero_paginas, tamanho_pagina, acessos, total_acessos, &page_fault, &pagina_suja);
     free(acessos);
     fclose(arquivo);
+    goto relatorio;
 }
 
 
@@ -265,10 +266,11 @@ if (strcmp(algoritmo, "otimo") == 0) {
         }
     }
 
+    relatorio:
     //imprimindo resultados
-    printf("Número de page faults: %d\n", page_fault);
-    printf("Número de páginas sujas: %d\n", pagina_suja);  
-
-    fclose(arquivo);
-    return 0;
+        printf("Número de page faults: %d\n", page_fault);
+        printf("Número de páginas sujas: %d\n", pagina_suja);  
+    
+        fclose(arquivo);
+        return 0;
 }
