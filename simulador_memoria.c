@@ -254,23 +254,23 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(algoritmo, "LRU") != 0 && strcmp(algoritmo, "2nd") != 0 &&
         strcmp(algoritmo, "clock") != 0 && strcmp(algoritmo, "otimo") != 0) {
-        fprintf(stderr, "Erro: algoritmo inválido.\n");
+        fprintf(stderr, "Erro: algoritmo inválido. Use 'LRU', '2nd', 'clock' ou 'otimo'.\n");
         return 1;
     }
 
     if (tamanho_pagina != 8 && tamanho_pagina != 32) {
-        fprintf(stderr, "Erro: tamanho de página inválido.\n");
+        fprintf(stderr, "Erro: tamanho de página inválido. Use 8 ou 32.\n");
         return 1;
     }
 
     if (tamanho_memoria != 1 && tamanho_memoria != 2) {
-        fprintf(stderr, "Erro: tamanho de memória inválido.\n");
+        fprintf(stderr, "Erro: tamanho de memória inválido. Use 1 ou 2.\n");
         return 1;
     }
 
     FILE *arquivo = fopen(nome_arquivo, "r");
     if (!arquivo) {
-        perror("Erro ao abrir o arquivo");
+        perror("Erro ao abrir o arquivo.");
         return 1;
     }
 
@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
     int numero_paginas = (tamanho_memoria * 1024) / tamanho_pagina;
     Pagina memoria[numero_paginas];
 
-    // se for algoritmo ótimo, processa todos os acessos de uma vez
+    //se for algoritmo ótimo, processa todos os acessos de uma vez
     if (strcmp(algoritmo, "otimo") == 0) {
         int total_acessos = 0;
         unsigned int a;
@@ -301,12 +301,10 @@ int main(int argc, char *argv[]) {
     }
 
     while (fscanf(arquivo, "%x %c", &addr, &rw) == 2) {
-
         if (rw != 'R' && rw != 'W') {
             fprintf(stderr, "Erro: operação inválida. Use 'R' ou 'W'.\n");
             return 1;
         }
-        
         if (strcmp(algoritmo, "LRU") == 0) {
             lru(memoria, numero_paginas, tamanho_pagina, addr, rw, &page_fault, &pagina_suja);
         } else if (strcmp(algoritmo, "clock") == 0) {
