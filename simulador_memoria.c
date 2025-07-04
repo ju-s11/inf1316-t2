@@ -252,8 +252,7 @@ int main(int argc, char *argv[]) {
     int tamanho_pagina = atoi(argv[3]);
     int tamanho_memoria = atoi(argv[4]);
 
-    if (strcmp(algoritmo, "LRU") != 0 && strcmp(algoritmo, "2nd") != 0 &&
-        strcmp(algoritmo, "clock") != 0 && strcmp(algoritmo, "otimo") != 0) {
+    if (strcmp(algoritmo, "LRU") != 0 && strcmp(algoritmo, "2nd") != 0 && strcmp(algoritmo, "clock") != 0 && strcmp(algoritmo, "otimo") != 0) {
         fprintf(stderr, "Erro: algoritmo inválido. Use 'LRU', '2nd', 'clock' ou 'otimo'.\n");
         return 1;
     }
@@ -297,7 +296,7 @@ int main(int argc, char *argv[]) {
         otimo(memoria, numero_paginas, tamanho_pagina, acessos, total_acessos, &page_fault, &pagina_suja);
         free(acessos);
         fclose(arquivo);
-        goto relatorio;
+        goto relatorio; //pula o resto do código até o relatorio
     }
 
     while (fscanf(arquivo, "%x %c", &addr, &rw) == 2) {
