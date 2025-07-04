@@ -5,6 +5,7 @@
 
 //estrutura para armazenar informações de uma página
 typedef struct {
+    int numero_pagina; //página atualmente armazenada no quadro
     int R; //flag de página referenciada
     int M; //flag de página modificada
     time_t ultimo_acesso; // tempo do último acesso (para LRU)
@@ -73,10 +74,74 @@ void lru(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int a
     memoria[lru_index].ultimo_acesso = time(NULL);
 }
 
-void segundo_chance() {
+void segunda_chance() {
 }
 
-void algoritmo_clock() { //função clock não pode ter o nome clock(), pois é uma função padrão da biblioteca time.h
+void algoritmo_clock(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int addr, char rw, int *page_fault, int *pagina_suja) {
+    static int paginas_carregadas = 0;
+    static int ponteiro = 0;
+    static unsigned page_size = 0;
+    static unsigned s = 0;
+
+    //calculando s na primeira execução
+    if (page_size == 0) {
+        page_size = tamanho_pagina * 1024;
+        unsigned tmp = page_size;
+        while (tmp > 1) {
+            tmp = tmp >> 1;
+            s++;
+        }
+    }
+
+    //determinando o número da página
+    unsigned int pagina_atual = addr >> s;
+
+    //verificando se a página já está carregada
+    for (int i = 0; i < paginas_carregadas; i++) {
+        if (memoria[i].numero_pagina == pagina_atual) {
+            memoria[i].R = 1;
+            if (rw == 'W') {
+                memoria[i].M = 1;
+            }
+            memoria[i].ultimo_acesso = time(NULL);
+            return; // Página já está na memória
+        }
+    }
+
+    //caso de page fault
+    (*page_fault)++;
+
+    // Há espaço livre?
+    if (paginas_carregadas < numero_paginas) {
+        memoria[paginas_carregadas].numero_pagina = pagina_atual;
+        memoria[paginas_carregadas].R = 1;
+        memoria[paginas_carregadas].M = (rw == 'W') ? 1 : 0;
+        memoria[paginas_carregadas].ultimo_acesso = time(NULL);
+        paginas_carregadas++;
+        return;
+    }
+
+    //substituição usando Clock
+    while (1) {
+        if (memoria[ponteiro].R == 0) {
+            // Substituir esta página
+            if (memoria[ponteiro].M == 1) {
+                (*pagina_suja)++;
+            }
+
+            memoria[ponteiro].numero_pagina = pagina_atual;
+            memoria[ponteiro].R = 1;
+            memoria[ponteiro].M = (rw == 'W') ? 1 : 0;
+            memoria[ponteiro].ultimo_acesso = time(NULL);
+
+            ponteiro = (ponteiro + 1) % numero_paginas;
+            break;
+        } else {
+            // Segunda chance
+            memoria[ponteiro].R = 0;
+            ponteiro = (ponteiro + 1) % numero_paginas;
+        }
+    }
 }
 
 void otimo() {
@@ -133,7 +198,7 @@ int main(int argc, char *argv[]) {
 
     //leitura do arquivo linha por linha
     while (fscanf(arquivo, "%x %c", &addr, &rw) == 2) {
-        printf("Endereço: 0x%08x, Tipo: %c\n", addr, rw);
+        //printf("Endereço: 0x%08x, Tipo: %c\n", addr, rw);
         if (rw != 'R' && rw != 'W') {
             fprintf(stderr, "Erro: tipo de operação inválido '%c'. Use 'R' ou 'W'\n", rw);
             fclose(arquivo);
@@ -144,10 +209,9 @@ int main(int argc, char *argv[]) {
             lru(memoria, numero_paginas, tamanho_pagina,addr, rw, &page_fault, &pagina_suja);
         } else if (strcmp(algoritmo, "2nd") == 0) {
             printf("Algoritmo não foi implementado 2nd ainda!\n");
-            //segundo_chance();
+            //segunda_chance();
         } else if (strcmp(algoritmo, "clock") == 0) {
-            printf("Algoritmo não foi implementado clock ainda!\n");
-            //clock();
+            algoritmo_clock(memoria, numero_paginas, tamanho_pagina,addr, rw, &page_fault, &pagina_suja);
         } else if (strcmp(algoritmo, "otimo") == 0) {
             printf("Algoritmo não foi implementado ótimo ainda!\n");
             //otimo();
