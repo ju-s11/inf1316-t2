@@ -8,7 +8,7 @@ typedef struct {
     int numero_pagina; //página atualmente armazenada no quadro (para clock)
     int R; //flag de página referenciada
     int M; //flag de página modificada
-    time_t ultimo_acesso; //tempo do último acesso (para LRU)
+    unsigned long ultimo_acesso; //tempo do último acesso (para LRU)
 } Pagina;
 
 //estrutura para armazenar informações de um quadro de página para o algoritmo ótimo
@@ -27,6 +27,7 @@ void lru(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int a
     static int paginas_carregadas = 0; //quantidade de quadros ocupados
     static unsigned page_size = 0;
     static unsigned s = 0;
+    static unsigned long time = 0; //contador de tempo simulado
 
     if (page_size == 0) {
         page_size = tamanho_pagina * 1024;
@@ -40,10 +41,13 @@ void lru(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int a
     //determinando o número da página associada ao endereço
     unsigned int pagina_atual = addr >> s;
 
+    //incrementa o tempo simulado a cada acesso
+    time++;
+
     //verificando se a página já está carregada na memória
     for (int i = 0; i < paginas_carregadas; i++) {
         if ((memoria[i].R == pagina_atual)) { //simulando presença da página usando R como "número"
-            memoria[i].ultimo_acesso = time(NULL);
+            memoria[i].ultimo_acesso = time; //atualiza o tempo do último acesso
             memoria[i].R = pagina_atual;
             if (rw == 'W') {
                 memoria[i].M = 1;
@@ -59,14 +63,14 @@ void lru(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int a
     if (paginas_carregadas < numero_paginas) {
         memoria[paginas_carregadas].R = pagina_atual;
         memoria[paginas_carregadas].M = (rw == 'W') ? 1 : 0;
-        memoria[paginas_carregadas].ultimo_acesso = time(NULL);
+        memoria[paginas_carregadas].ultimo_acesso = time;
         paginas_carregadas++;
         return;
     }
 
     //se não houver espaço, substituir a página LRU (menor tempo), ou seja, o último acesso mais antigo
     int lru_index = 0;
-    time_t mais_antigo = memoria[0].ultimo_acesso;
+    unsigned long mais_antigo = memoria[0].ultimo_acesso;
 
     for (int i = 1; i < numero_paginas; i++) {
         if (memoria[i].ultimo_acesso < mais_antigo) {
@@ -83,7 +87,7 @@ void lru(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int a
     //substitui pela nova página
     memoria[lru_index].R = pagina_atual;
     memoria[lru_index].M = (rw == 'W') ? 1 : 0;
-    memoria[lru_index].ultimo_acesso = time(NULL);
+    memoria[lru_index].ultimo_acesso = time;
 }
 
 void segunda_chance() {
@@ -236,11 +240,10 @@ void otimo(Pagina *memoria, int numero_paginas, int tamanho_pagina, Acesso *aces
 
 int main(int argc, char *argv[]) {
     if (argc != 5) {
-        fprintf(stderr, "Uso: %s <algoritmo> <arquivo do tipo .log> <tamanho de cada pagina em KB> <tamanho da memoria em MB>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <algoritmo> <arquivo .log> <tamanho_pagina_KB> <tamanho_memoria_MB>\n", argv[0]);
         return 1;
     }
 
-    //lendo argumentos da linha de comando
     char algoritmo[20];
     strncpy(algoritmo, argv[1], sizeof(algoritmo) - 1);
     algoritmo[sizeof(algoritmo) - 1] = '\0';
@@ -249,25 +252,22 @@ int main(int argc, char *argv[]) {
     int tamanho_pagina = atoi(argv[3]);
     int tamanho_memoria = atoi(argv[4]);
 
-    //validando algoritmo
-    if (strcmp(algoritmo, "LRU") != 0 && strcmp(algoritmo, "2nd") != 0 && strcmp(algoritmo, "clock") != 0 && strcmp(algoritmo, "otimo") != 0) {
-        fprintf(stderr, "Erro: algoritmo inválido. Use: LRU, 2nd, clock ou otimo\n");
+    if (strcmp(algoritmo, "LRU") != 0 && strcmp(algoritmo, "2nd") != 0 &&
+        strcmp(algoritmo, "clock") != 0 && strcmp(algoritmo, "otimo") != 0) {
+        fprintf(stderr, "Erro: algoritmo inválido.\n");
         return 1;
     }
 
-    //validando tamanho de página
     if (tamanho_pagina != 8 && tamanho_pagina != 32) {
-        fprintf(stderr, "Erro: tamanho de página inválido. Use: 8 ou 32 (em KB)\n");
+        fprintf(stderr, "Erro: tamanho de página inválido.\n");
         return 1;
     }
 
-    //validando tamanho de memória
     if (tamanho_memoria != 1 && tamanho_memoria != 2) {
-        fprintf(stderr, "Erro: tamanho de memória inválido. Use: 1 ou 2 (em MB)\n");
+        fprintf(stderr, "Erro: tamanho de memória inválido.\n");
         return 1;
     }
 
-    //abrindo o arquivo.log
     FILE *arquivo = fopen(nome_arquivo, "r");
     if (!arquivo) {
         perror("Erro ao abrir o arquivo");
@@ -278,57 +278,45 @@ int main(int argc, char *argv[]) {
     char rw;
     int pagina_suja = 0;
     int page_fault = 0;
-    int numero_paginas = tamanho_memoria * 1024 / tamanho_pagina;
-    //printf("Número de páginas: %d\n", numero_paginas);
-
+    int numero_paginas = (tamanho_memoria * 1024) / tamanho_pagina;
     Pagina memoria[numero_paginas];
 
-    //se algoritmo for otimo tem que ler todos os acessos antes
-    Acesso *acessos = NULL;
-    int total_acessos = 0;
+    // se for algoritmo ótimo, processa todos os acessos de uma vez
+    if (strcmp(algoritmo, "otimo") == 0) {
+        int total_acessos = 0;
+        unsigned int a;
+        char r;
 
-    //leitura do arquivo linha por linha
+        while (fscanf(arquivo, "%x %c", &a, &r) == 2) total_acessos++;
+        rewind(arquivo);
+
+        Acesso *acessos = malloc(sizeof(Acesso) * total_acessos);
+        for (int i = 0; i < total_acessos; i++)
+            fscanf(arquivo, "%x %c", &acessos[i].addr, &acessos[i].rw);
+
+        otimo(memoria, numero_paginas, tamanho_pagina, acessos, total_acessos, &page_fault, &pagina_suja);
+        free(acessos);
+        fclose(arquivo);
+        goto relatorio;
+    }
+
     while (fscanf(arquivo, "%x %c", &addr, &rw) == 2) {
-        //printf("Endereço: 0x%08x, Tipo: %c\n", addr, rw);
-        if (rw != 'R' && rw != 'W') {
-            fprintf(stderr, "Erro: tipo de operação inválido '%c'. Use 'R' ou 'W'\n", rw);
-            fclose(arquivo);
-            return 1;
-        }
+        if (rw != 'R' && rw != 'W') continue;
 
         if (strcmp(algoritmo, "LRU") == 0) {
-            lru(memoria, numero_paginas, tamanho_pagina,addr, rw, &page_fault, &pagina_suja);
-        } else if (strcmp(algoritmo, "2nd") == 0) {
-            printf("Algoritmo não foi implementado 2nd ainda!\n");
-            //segunda_chance();
+            lru(memoria, numero_paginas, tamanho_pagina, addr, rw, &page_fault, &pagina_suja);
         } else if (strcmp(algoritmo, "clock") == 0) {
-            algoritmo_clock(memoria, numero_paginas, tamanho_pagina,addr, rw, &page_fault, &pagina_suja);
-        } else if (strcmp(algoritmo, "otimo") == 0) {
-            //primeira leitura
-            unsigned int a;
-            char r;
-            while (fscanf(arquivo, "%x %c", &a, &r) == 2)
-                total_acessos++;
-
-            acessos = malloc(sizeof(Acesso) * total_acessos);
-            rewind(arquivo);
-
-            for (int i = 0; i < total_acessos; i++)
-                fscanf(arquivo, "%x %c", &acessos[i].addr, &acessos[i].rw);
-
-            //execução do algoritmo ótimo
-            Pagina memoria_otima[numero_paginas];
-            otimo(memoria_otima, numero_paginas, tamanho_pagina, acessos, total_acessos, &page_fault, &pagina_suja);
-            free(acessos);
-            fclose(arquivo);
-            goto relatorio;
+            algoritmo_clock(memoria, numero_paginas, tamanho_pagina, addr, rw, &page_fault, &pagina_suja);
+        } else if (strcmp(algoritmo, "2nd") == 0) {
+            printf("Algoritmo 2nd não implementado ainda.\n");
         }
     }
 
-    relatorio:
-        printf("Número de page faults: %d\n", page_fault);
-        printf("Número de páginas sujas: %d\n", pagina_suja);  
-        
-        fclose(arquivo);
-        return 0;
+    fclose(arquivo);
+
+relatorio:
+    printf("Número de page faults: %d\n", page_fault);
+    printf("Número de páginas sujas: %d\n", pagina_suja);
+    return 0;
 }
+
