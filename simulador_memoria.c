@@ -90,8 +90,60 @@ void lru(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int a
     memoria[lru_index].ultimo_acesso = time;
 }
 
-void segunda_chance() {
+void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int addr, char rw, int *page_fault, int *pagina_suja) {
+    static int paginas_carregadas = 0;
+    static unsigned page_size = 0;
+    static unsigned s = 0;
+    static int ponteiro = 0; // ponteiro circular
+
+    if (page_size == 0) {
+        page_size = tamanho_pagina * 1024;
+        unsigned tmp = page_size;
+        while (tmp > 1) {
+            tmp = tmp >> 1;
+            s++;
+        }
+    }
+
+    unsigned int pagina_atual = addr >> s;
+
+    // Verifica se a página já está na memória
+    for (int i = 0; i < paginas_carregadas; i++) {
+        if (memoria[i].R == pagina_atual) {
+            memoria[i].R = 1; // recebe segunda chance
+            if (rw == 'W') memoria[i].M = 1;
+            return;
+        }
+    }
+
+    // Page fault
+    (*page_fault)++;
+
+    // Se ainda há espaço na memória, insere diretamente
+    if (paginas_carregadas < numero_paginas) {
+        memoria[paginas_carregadas].R = pagina_atual;
+        memoria[paginas_carregadas].M = (rw == 'W') ? 1 : 0;
+        paginas_carregadas++;
+        return;
+    }
+
+    // Substituição com segunda chance
+    while (1) {
+        if (memoria[ponteiro].R == 0) {
+            if (memoria[ponteiro].M == 1)
+                (*pagina_suja)++;
+
+            memoria[ponteiro].R = pagina_atual;
+            memoria[ponteiro].M = (rw == 'W') ? 1 : 0;
+            ponteiro = (ponteiro + 1) % numero_paginas;
+            return;
+        } else {
+            memoria[ponteiro].R = 0; // limpa referência
+            ponteiro = (ponteiro + 1) % numero_paginas;
+        }
+    }
 }
+
 
 void algoritmo_clock(Pagina *memoria, int numero_paginas, int tamanho_pagina, unsigned int addr, char rw, int *page_fault, int *pagina_suja) {
     static int paginas_carregadas = 0;
@@ -161,11 +213,11 @@ void algoritmo_clock(Pagina *memoria, int numero_paginas, int tamanho_pagina, un
 }
 
 void otimo(Pagina *memoria, int numero_paginas, int tamanho_pagina, Acesso *acessos, int total_acessos, int *page_fault, int *pagina_suja) {
-    static int paginas_carregadas = 0;
-    static unsigned page_size = 0;
-    static unsigned s = 0;
-    static Quadro *quadros = NULL;
-    static int pos = 0;
+    int paginas_carregadas = 0;
+    unsigned page_size = 0;
+    unsigned s = 0;
+    Quadro *quadros = NULL;
+    int pos = 0;
 
     if (quadros == NULL) {
         quadros = (Quadro *)malloc(sizeof(Quadro) * numero_paginas);
@@ -308,7 +360,7 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(algoritmo, "clock") == 0) {
             algoritmo_clock(memoria, numero_paginas, tamanho_pagina, addr, rw, &page_fault, &pagina_suja);
         } else if (strcmp(algoritmo, "2nd") == 0) {
-            printf("Algoritmo 2nd não implementado ainda.\n");
+            segunda_chance(memoria, numero_paginas, tamanho_pagina, addr, rw, &page_fault, &pagina_suja);
         }
     }
 
