@@ -94,7 +94,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
     static int paginas_carregadas = 0;
     static unsigned page_size = 0;
     static unsigned s = 0;
-    static int ponteiro = 0; // ponteiro circular
+    static int ponteiro = 0; //ponteiro circular
 
     if (page_size == 0) {
         page_size = tamanho_pagina * 1024;
@@ -107,19 +107,19 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
 
     unsigned int pagina_atual = addr >> s;
 
-    // Verifica se a página já está na memória
+    //verifica se a página já está na memória
     for (int i = 0; i < paginas_carregadas; i++) {
         if (memoria[i].R == pagina_atual) {
-            memoria[i].R = 1; // recebe segunda chance
+            memoria[i].R = 1; //recebe segunda chance
             if (rw == 'W') memoria[i].M = 1;
             return;
         }
     }
 
-    // Page fault
+    //page fault
     (*page_fault)++;
 
-    // Se ainda há espaço na memória, insere diretamente
+    //se ainda há espaço na memória, insere diretamente
     if (paginas_carregadas < numero_paginas) {
         memoria[paginas_carregadas].R = pagina_atual;
         memoria[paginas_carregadas].M = (rw == 'W') ? 1 : 0;
@@ -127,7 +127,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
         return;
     }
 
-    // Substituição com segunda chance
+    //substituição com segunda chance
     while (1) {
         if (memoria[ponteiro].R == 0) {
             if (memoria[ponteiro].M == 1)
