@@ -110,7 +110,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
     //verificando se a página já está na memória
     for (int i = 0; i < paginas_carregadas; i++) {
         if (memoria[i].R == pagina_atual) {
-            memoria[i].R = 1; // recebe segunda chance
+            memoria[i].R = 1; //recebe segunda chance
             if (rw == 'W') memoria[i].M = 1;
             return;
         }
