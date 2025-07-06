@@ -94,7 +94,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
     static int paginas_carregadas = 0;
     static unsigned page_size = 0;
     static unsigned s = 0;
-    static int ponteiro = 0; // ponteiro circular
+    static int ponteiro = 0; //ponteiro circular
 
     if (page_size == 0) {
         page_size = tamanho_pagina * 1024;
@@ -107,7 +107,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
 
     unsigned int pagina_atual = addr >> s;
 
-    // Verifica se a página já está na memória
+    //verificando se a página já está na memória
     for (int i = 0; i < paginas_carregadas; i++) {
         if (memoria[i].R == pagina_atual) {
             memoria[i].R = 1; // recebe segunda chance
@@ -116,10 +116,10 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
         }
     }
 
-    // Page fault
+    //caso de page fault
     (*page_fault)++;
 
-    // Se ainda há espaço na memória, insere diretamente
+    //se ainda há espaço na memória, insere diretamente
     if (paginas_carregadas < numero_paginas) {
         memoria[paginas_carregadas].R = pagina_atual;
         memoria[paginas_carregadas].M = (rw == 'W') ? 1 : 0;
@@ -127,7 +127,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
         return;
     }
 
-    // Substituição com segunda chance
+    //substituição com segunda chance
     while (1) {
         if (memoria[ponteiro].R == 0) {
             if (memoria[ponteiro].M == 1)
@@ -138,7 +138,7 @@ void segunda_chance(Pagina *memoria, int numero_paginas, int tamanho_pagina, uns
             ponteiro = (ponteiro + 1) % numero_paginas;
             return;
         } else {
-            memoria[ponteiro].R = 0; // limpa referência
+            memoria[ponteiro].R = 0; //limpa referência
             ponteiro = (ponteiro + 1) % numero_paginas;
         }
     }
@@ -368,8 +368,12 @@ int main(int argc, char *argv[]) {
     fclose(arquivo);
 
 relatorio:
+    printf("Executando o simulador...\n");
+    printf("Arquivo de entrada: %s\n", nome_arquivo);
+    printf("Tamanho da memória física: %d MB\n", tamanho_memoria);
+    printf("Tamanho das páginas: %d KB\n", tamanho_pagina);
+    printf("Algoritmo de substituição: %s\n", algoritmo);
     printf("Número de page faults: %d\n", page_fault);
     printf("Número de páginas sujas: %d\n", pagina_suja);
     return 0;
 }
-
